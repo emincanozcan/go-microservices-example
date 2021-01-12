@@ -1,0 +1,20 @@
+version: "3"
+services:
+  user-service:
+    build: ./user-service
+    ports:
+      - 7002:3000
+    volumes:
+      - ./user-service:/app
+    depends_on:
+      - user-database
+    environment:
+      JWT_KEY: secret
+  user-database:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: users
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - 0.0.0.0:8002:3306
+      
