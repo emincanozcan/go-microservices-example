@@ -18,3 +18,21 @@ services:
     ports:
       - 0.0.0.0:8002:3306
       
+  product-service:
+    build: ./product-service
+    volumes:
+      - ./product-service:/app
+    ports:
+      - 7001:3000
+    depends_on:
+      - product-database
+    environment:
+      JWT_KEY: secret
+  product-database:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: products
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - 0.0.0.0:8001:3306
+
