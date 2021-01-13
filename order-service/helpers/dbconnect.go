@@ -12,7 +12,7 @@ import (
 var DB *gorm.DB
 
 func DbConnect() {
-	dsn := "root:password@tcp(order-database)/orders?charset=utf8mb4"
+	dsn := "root:password@tcp(order-database)/orders?charset=utf8mb4&parseTime=true"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Database connection error!")
