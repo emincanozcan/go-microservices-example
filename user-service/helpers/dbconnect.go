@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"github.com/bxcodec/faker/v3"
 	"github.com/emincanozcan/go-microservices-example/user-service/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -16,8 +17,27 @@ func DbConnect() {
 	}
 	DB = db
 	migrate()
+	// seed()
 }
 
 func migrate() {
 	DB.AutoMigrate(&models.User{})
+}
+
+func seed() {
+	user := models.User{
+		Name:     "Admin Account",
+		Email:    "admin@admin.com",
+		Password: "adminpass",
+		Type:     9,
+	}
+	DB.Create(&user)
+	for i := 0; i < 100; i++ {
+		user := models.User{
+			Name:     faker.Name(),
+			Email:    faker.Email(),
+			Password: faker.Password(),
+		}
+		DB.Create(&user)
+	}
 }
