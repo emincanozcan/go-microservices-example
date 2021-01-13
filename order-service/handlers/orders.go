@@ -1,9 +1,17 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
 	"github.com/emincanozcan/go-microservices-example/order-service/helpers"
 	"github.com/emincanozcan/go-microservices-example/order-service/models"
 	"github.com/form3tech-oss/jwt-go"
+	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -12,7 +20,8 @@ func GetByCurrentUser(c *fiber.Ctx) error {
 	u := c.Locals("user").(*jwt.Token)
 	claims := u.Claims.(jwt.MapClaims)
 	userID := uint(claims["id"].(float64))
-	helpers.DB.Preload("Items").Where("user_id = ?", userID).Find(&orders)
+	helpers.DB.Where("user_id = ?", userID).Preload("Items").Find(&orders)
+	fmt.Println(orders)
 	return c.JSON(fiber.Map{
 		"data": orders,
 	})
@@ -24,46 +33,78 @@ type Product struct {
 }
 
 func CreateOrder(c *fiber.Ctx) error {
-	// u := c.Locals("user").(*jwt.Token)
-	// claims := u.Claims.(jwt.MapClaims)
-	// userID := uint(claims["id"].(float64))
+	u := c.Locals("user").(*jwt.Token)
+	claims := u.Claims.(jwt.MapClaims)
+	userID := uint(claims["id"].(float64))
 
-	// var p []Product
-	// c.BodyParser(&p)
+	var p []Product
+	c.BodyParser(&p)
 
-	// var pIds []int
-	// for _, pi := range p {
-	// 	v := validator.New()
-	// 	pIds = append(pIds, int(pi.ID))
-	// 	err := v.Struct(&pi)
-	// 	if err != nil {
-	// 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Invalid body"})
-	// 	}
-	// }
+	var totalPrice float32
 
-	// var Items []models.Item
+	// validate data...
+	for _, pi := range p {
+		v := validator.New()
+		if err := v.Struct(&pi); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Invalid body"})
+		}
+	}
 
-	// for _, pi := range p {
-	// 	pId := int(pi.ID)
-	// 	r, err := http.Get("http://product-service:3000/products/" + strconv.Itoa(pId))
-	// 	if err != nil {
-	// 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Product service is not accesible"})
-	// 	}
-	// 	body, _ := ioutil.ReadAll(r.Body)
-	// 	var result map[string]interface{}
-	// 	json.Unmarshal([]byte(body), &result)
+	// fetch product data from product service
+	var items []models.Item
 
-	// 	data := result["data"].(map[string]string)
-	// 	id, _ := strconv.Atoi(data["id"])
-	// 	title := data["title"]
-	// 	price, _ := strconv.ParseFloat(data["price"], 32)
+	for _, ci := range p {
+		res, err := http.Get(helpers.Getenv("PRODUCT_SERVICE_BASE_URL") + "products/" + strconv.Itoa(int(ci.ID)))
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Product service is not accesible"})
+		}
+		body, _ := ioutil.ReadAll(res.Body)
+		var result map[string]interface{}
+		json.Unmarshal([]byte(body), &result)
 
-	// 	Items = append(Items, models.Item{
-	// 		ID:    uint(id),
-	// 		Title: title,
-	// 		Price: float32(price),
-	// 		Count: pi.Count,
-	// 	})
-	// }
-	return nil
+		data := result["data"].(map[string]interface{})
+
+		stock := uint(data["stock"].(float64))
+		if ci.Count > stock {
+			return c.Status(http.StatusNotAcceptable).JSON(fiber.Map{"message": "Stock problem!"})
+		}
+		title := data["title"].(string)
+		price := float32(data["price"].(float64))
+		totalPrice += price * float32(ci.Count)
+		items = append(items, models.Item{
+			ProductID: ci.ID,
+			Title:     title,
+			Price:     price,
+			Count:     ci.Count,
+		})
+	}
+
+	// save order
+	order := models.Order{
+		UserID: userID,
+		Price:  totalPrice,
+		Items:  items,
+	}
+
+	fmt.Println(order)
+	if err := helpers.DB.Create(&order).Error; err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error: " + err.Error()})
+	}
+
+	go decreaseStock(items)
+
+	return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "Order is created!", "data": order})
+}
+func decreaseStock(items []models.Item) {
+
+	client := &http.Client{}
+	for _, i := range items {
+		json, _ := json.Marshal(map[string]int{"count": int(i.Count)})
+		req, _ := http.NewRequest(http.MethodPut,
+			helpers.Getenv("PRODUCT_SERVICE_INTERNAL_BASE_URL")+"products/"+strconv.Itoa(int(i.ProductID))+"/decrease-stock",
+			bytes.NewBuffer(json))
+		fmt.Println(req.Method)
+		fmt.Println(req.Form)
+		client.Do(req)
+	}
 }

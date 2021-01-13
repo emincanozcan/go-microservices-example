@@ -47,6 +47,8 @@ services:
       - order-database
     environment:
       JWT_KEY: secret
+      PRODUCT_SERVICE_BASE_URL: http://product-service:3000/ 
+      PRODUCT_SERVICE_INTERNAL_BASE_URL: http://product-service:3001/ 
   order-database:
     image: mysql:latest
     environment:

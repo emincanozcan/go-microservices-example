@@ -106,3 +106,13 @@ func GetProduct(c *fiber.Ctx) error {
 		"data": p,
 	})
 }
+
+func DecreaseStockOfProduct(c *fiber.Ctx) error {
+	var body map[string]interface{}
+	json.Unmarshal(c.Body(), &body)
+	count := int(body["count"].(float64))
+
+	pID, _ := strconv.Atoi(c.Params("id"))
+	helpers.DB.Debug().Model(&models.Product{}).Where("id", pID).UpdateColumn("stock", gorm.Expr("stock - ?", count))
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "OK"})
+}
