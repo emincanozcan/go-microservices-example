@@ -1,19 +1,21 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/emincanozcan/go-microservices-example/product-service/helpers"
 	"github.com/emincanozcan/go-microservices-example/product-service/models"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 
 	"github.com/go-playground/validator/v10"
 )
 
 func GetProducts(c *fiber.Ctx) error {
 	var p []models.Product
-	helpers.DB.Find(&p)
+	helpers.DB.Scopes(helpers.Paginate(c)).Find(&p)
 	return c.Status(http.StatusOK).JSON(map[string]interface{}{
 		"data": p,
 	})
