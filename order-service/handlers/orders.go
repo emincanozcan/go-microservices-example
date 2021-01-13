@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -21,7 +20,6 @@ func GetByCurrentUser(c *fiber.Ctx) error {
 	claims := u.Claims.(jwt.MapClaims)
 	userID := uint(claims["id"].(float64))
 	helpers.DB.Where("user_id = ?", userID).Preload("Items").Find(&orders)
-	fmt.Println(orders)
 	return c.JSON(fiber.Map{
 		"data": orders,
 	})
@@ -86,7 +84,6 @@ func CreateOrder(c *fiber.Ctx) error {
 		Items:  items,
 	}
 
-	fmt.Println(order)
 	if err := helpers.DB.Create(&order).Error; err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error: " + err.Error()})
 	}
@@ -103,8 +100,6 @@ func decreaseStock(items []models.Item) {
 		req, _ := http.NewRequest(http.MethodPut,
 			helpers.Getenv("PRODUCT_SERVICE_INTERNAL_BASE_URL")+"products/"+strconv.Itoa(int(i.ProductID))+"/decrease-stock",
 			bytes.NewBuffer(json))
-		fmt.Println(req.Method)
-		fmt.Println(req.Form)
 		client.Do(req)
 	}
 }

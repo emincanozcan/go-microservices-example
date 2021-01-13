@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -23,7 +22,6 @@ func main() {
 }
 func initGlobalService() {
 	defer wg.Done()
-	fmt.Println("TEESTT")
 	app := fiber.New()
 	app.Get("/products", handlers.GetProducts)
 	app.Get("/products/:id", handlers.GetProduct)
@@ -49,9 +47,6 @@ func initGlobalService() {
 }
 func initInternalService() {
 	defer wg.Done()
-
-	fmt.Println("TEESTT 2")
-
 	app := fiber.New()
 	app.Put("/products/:id/decrease-stock", handlers.DecreaseStockOfProduct)
 	app.Listen(":3001")

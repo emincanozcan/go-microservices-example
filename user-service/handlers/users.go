@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -24,7 +23,6 @@ func Register(c *fiber.Ctx) error {
 
 	v := validator.New()
 	err := v.Struct(&u)
-	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(map[string]string{
 			"message": "Data is not valid",
