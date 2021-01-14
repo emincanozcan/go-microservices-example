@@ -22,55 +22,56 @@ func GetProducts(c *fiber.Ctx) error {
 }
 
 type createProductStructure struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description" validate:"required"`
+	Title       string  `json:"title" validate:"required"`
+	Description string  `json:"description" validate:"required"`
+	Stock       uint    `json:"stock" validate:"required"`
+	Price       float32 `json:"price" validate:"required"`
 }
 
-func CreateProduct(c *fiber.Ctx) error {
+func isProductValidProductInput(c *fiber.Ctx) (createProductStructure, bool) {
 	var p createProductStructure
 	c.BodyParser(&p)
 	v := validator.New()
 	err := v.Struct(p)
 	if err != nil {
+		return createProductStructure{}, false
+	}
+	return p, true
+}
+
+func CreateProduct(c *fiber.Ctx) error {
+	p, ok := isProductValidProductInput(c)
+	if !ok {
 		return c.JSON(map[string]string{
 			"message": "Invalid data",
 		})
-
 	}
-
-	product := models.Product{Title: p.Title, Description: p.Description}
+	product := models.Product{Title: p.Title, Description: p.Description, Stock: p.Stock, Price: p.Price}
 	helpers.DB.Create(&product)
 	return c.Status(201).JSON(product)
 }
 
-type updateProductStructure struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
 func UpdateProduct(c *fiber.Ctx) error {
-	var p createProductStructure
-	c.BodyParser(&p)
-	v := validator.New()
-	err := v.Struct(p)
-	if err != nil {
+	p, ok := isProductValidProductInput(c)
+	if !ok {
 		return c.JSON(map[string]string{
 			"message": "Invalid data",
 		})
 	}
 
 	product := models.Product{}
-
 	var pID = c.Params("id")
 	r := helpers.DB.Where("id", pID).First(&product)
 	if r.RowsAffected < 1 {
 		return c.JSON(map[string]string{
 			"message": "Product is not found",
 		})
-
 	}
+
 	product.Title = p.Title
 	product.Description = p.Description
+	product.Price = p.Price
+	product.Stock = p.Stock
 	helpers.DB.Updates(&product)
 	return c.JSON(map[string]interface{}{
 		"data": product,
