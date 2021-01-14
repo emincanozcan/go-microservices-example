@@ -23,8 +23,8 @@ func main() {
 func initGlobalService() {
 	defer wg.Done()
 	app := fiber.New()
-	app.Get("/products", handlers.GetProducts)
-	app.Get("/products/:id", handlers.GetProduct)
+	app.Get("/api/products/v1", handlers.GetProducts)
+	app.Get("/api/products/v1/:id", handlers.GetProduct)
 
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: []byte(helpers.Getenv("JWT_KEY")),
@@ -40,14 +40,14 @@ func initGlobalService() {
 		}
 		return c.Next()
 	})
-	app.Post("/products", handlers.CreateProduct)
-	app.Put("/products/:id", handlers.UpdateProduct)
-	app.Delete("/products/:id", handlers.DeleteProduct)
+	app.Post("/api/products/v1", handlers.CreateProduct)
+	app.Put("/api/products/v1/:id", handlers.UpdateProduct)
+	app.Delete("/api/products/v1/:id", handlers.DeleteProduct)
 	app.Listen(":3000")
 }
 func initInternalService() {
 	defer wg.Done()
 	app := fiber.New()
-	app.Put("/products/:id/decrease-stock", handlers.DecreaseStockOfProduct)
+	app.Put("/api/products/v1/:id/decrease-stock", handlers.DecreaseStockOfProduct)
 	app.Listen(":3001")
 }

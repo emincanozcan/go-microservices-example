@@ -13,7 +13,7 @@ func main() {
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: []byte(helpers.Getenv("JWT_KEY")),
 	}))
-	app.Get("/orders", handlers.GetByCurrentUser)
-	app.Post("/orders", handlers.CreateOrder)
+	app.Get("/api/orders/v1", handlers.GetByCurrentUser)
+	app.Post("/api/orders/v1", handlers.CreateOrder)
 	app.Listen(":3000")
 }

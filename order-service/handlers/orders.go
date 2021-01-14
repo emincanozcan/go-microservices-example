@@ -52,7 +52,7 @@ func CreateOrder(c *fiber.Ctx) error {
 	var items []models.Item
 
 	for _, ci := range p {
-		res, err := http.Get(helpers.Getenv("PRODUCT_SERVICE_BASE_URL") + "products/" + strconv.Itoa(int(ci.ID)))
+		res, err := http.Get(helpers.Getenv("PRODUCT_SERVICE_BASE_URL") + "api/products/v1/" + strconv.Itoa(int(ci.ID)))
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Product service is not accesible"})
 		}
@@ -98,7 +98,7 @@ func decreaseStock(items []models.Item) {
 	for _, i := range items {
 		json, _ := json.Marshal(map[string]int{"count": int(i.Count)})
 		req, _ := http.NewRequest(http.MethodPut,
-			helpers.Getenv("PRODUCT_SERVICE_INTERNAL_BASE_URL")+"products/"+strconv.Itoa(int(i.ProductID))+"/decrease-stock",
+			helpers.Getenv("PRODUCT_SERVICE_INTERNAL_BASE_URL")+"api/products/v1/"+strconv.Itoa(int(i.ProductID))+"/decrease-stock",
 			bytes.NewBuffer(json))
 		client.Do(req)
 	}
