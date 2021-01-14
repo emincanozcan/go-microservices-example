@@ -1,9 +1,18 @@
 version: "3"
 services:
+  nginx-api-gateway:
+    image: nginx:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx-api-gateway/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+
   user-service:
     build: ./user-service
-    ports:
-      - 7002:3000
     volumes:
       - ./user-service:/app
     depends_on:
@@ -17,13 +26,11 @@ services:
       MYSQL_ROOT_PASSWORD: password
     ports:
       - 0.0.0.0:8002:3306
-      
+
   product-service:
     build: ./product-service
     volumes:
       - ./product-service:/app
-    ports:
-      - 7001:3000
     depends_on:
       - product-database
     environment:
@@ -36,19 +43,16 @@ services:
     ports:
       - 0.0.0.0:8001:3306
 
-
   order-service:
     build: ./order-service
     volumes:
       - ./order-service:/app
-    ports:
-      - 7003:3000
     depends_on:
       - order-database
     environment:
       JWT_KEY: secret
-      PRODUCT_SERVICE_BASE_URL: http://product-service:3000/ 
-      PRODUCT_SERVICE_INTERNAL_BASE_URL: http://product-service:3001/ 
+      PRODUCT_SERVICE_BASE_URL: http://product-service:3000/
+      PRODUCT_SERVICE_INTERNAL_BASE_URL: http://product-service:3001/
   order-database:
     image: mysql:latest
     environment:
